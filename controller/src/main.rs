@@ -4,16 +4,14 @@
 use core::fmt::Write;
 
 use cyw43_pio::PioSpi;
-use eeprom24x::page_size::No;
 use embassy_executor::Spawner;
 use embassy_net::tcp::TcpSocket;
-use embassy_net::{Config, IpAddress, Ipv4Address, Ipv4Cidr, Stack, StackResources};
+use embassy_net::{Config, Ipv4Cidr, Stack, StackResources};
 use embassy_rp::adc::{Adc, Config as AdcConfig, InterruptHandler as AdcInterruptHandler};
 use embassy_rp::bind_interrupts;
 use embassy_rp::gpio::{Input, Level, Output};
-use embassy_rp::peripherals::{DMA_CH0, PIO0, USB};
+use embassy_rp::peripherals::{DMA_CH0, PIO0};
 use embassy_rp::pio::{InterruptHandler as PioInterruptHandler, Pio};
-use embassy_rp::usb::{Driver, InterruptHandler as USBInterruptHandler};
 use embassy_time::{Duration, Timer};
 use embedded_io_async::Write as _;
 // use futures::TryFutureExt;
@@ -32,18 +30,25 @@ use embassy_rp::peripherals::I2C0;
 
 // TODO: Change these depending on network
 pub mod network_constants {
-    pub const WIFI_NETWORK: &str = "Cristina";
-    pub const WIFI_PASSWORD: &str = "cristina24091983";
-    pub const REMOTE_IP_ADDRESS: embassy_net::Ipv4Address = embassy_net::Ipv4Address::new(192, 168, 100, 212);
-    pub const TURRET_IP_ADDRESS: embassy_net::Ipv4Address = embassy_net::Ipv4Address::new(192, 168, 100, 2);
+    pub const WIFI_NETWORK: &str = "Wyliodrin";
+    pub const WIFI_PASSWORD: &str = "g3E2PjWy";
+    pub const REMOTE_IP_ADDRESS: embassy_net::Ipv4Address = embassy_net::Ipv4Address::new(192, 168, 1, 212);
+    pub const TURRET_IP_ADDRESS: embassy_net::Ipv4Address = embassy_net::Ipv4Address::new(192, 168, 1, 213);
     pub const PORT: u16 = 3000;
     pub const PREFIX_LEN: u8 = 24;
-    pub const DEFAULT_GATEWAY: Option<embassy_net::Ipv4Address> = Some(embassy_net::Ipv4Address::new(192, 168, 100, 1));
+    pub const DEFAULT_GATEWAY: Option<embassy_net::Ipv4Address> = Some(embassy_net::Ipv4Address::new(192, 168, 1, 1));
+    // pub const WIFI_NETWORK: &str = "motorola312";
+    // pub const WIFI_PASSWORD: &str = "nsog0632";
+    // pub const REMOTE_IP_ADDRESS: embassy_net::Ipv4Address = embassy_net::Ipv4Address::new(192, 168, 133, 92);
+    // pub const TURRET_IP_ADDRESS: embassy_net::Ipv4Address = embassy_net::Ipv4Address::new(192, 168, 133, 93);
+    // pub const PORT: u16 = 3000;
+    // pub const PREFIX_LEN: u8 = 24;
+    // pub const DEFAULT_GATEWAY: Option<embassy_net::Ipv4Address> = Some(embassy_net::Ipv4Address::new(192, 168, 133, 90));
 }
+
 
 bind_interrupts!(struct Irqs {
     PIO0_IRQ_0 => PioInterruptHandler<PIO0>;
-    // USBCTRL_IRQ => USBInterruptHandler<USB>;
     ADC_IRQ_FIFO => AdcInterruptHandler;
     I2C0_IRQ => I2CInterruptHandler<I2C0>;
 });
@@ -64,41 +69,19 @@ const LCD_ADDRESS: u8 = 0x27;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Direction {
-    Up = 100,
-    Down = 101,
-    Left = 102,
-    Right = 103,
-    UpLeft = 104,
-    UpRight = 105,
-    DownLeft = 106,
-    DownRight = 107,
+    Left = 108,
+    Right = 114,
 }
 
 impl Direction {
     pub fn from_samples(x: u16, y: u16) -> Option<Direction> {
-        let mut dir = None;
-
         if x < 250 {
-            dir = Some(Direction::Left);
+            Some(Direction::Left)
         } else if x > 2500 {
-            dir = Some(Direction::Right);
+            Some(Direction::Right)
+        } else {
+            None
         }
-
-        if y < 250 {
-            dir = match dir {
-                Some(Direction::Left) => Some(Direction::DownLeft),
-                Some(Direction::Right) => Some(Direction::DownRight),
-                _ => Some(Direction::Down),
-            }
-        } else if y > 2500 {
-            dir = match dir {
-                Some(Direction::Left) => Some(Direction::UpLeft),
-                Some(Direction::Right) => Some(Direction::UpRight),
-                _ => Some(Direction::Up),
-            }
-        }
-
-        dir
     }
 }
 
@@ -112,9 +95,9 @@ pub enum Packet {
 impl Packet {
     pub fn to_u8(&self) -> u8 {
         match self {
-            Packet::Shoot => 123,
+            Packet::Shoot => 115,
             Packet::Move(m) => *m as u8,
-            Packet::None => 99
+            Packet::None => 110
         }
     }
 }
@@ -281,6 +264,9 @@ async fn main(spawner: Spawner) {
             }
 
             Timer::after_millis(500).await;
+            if let Packet::Shoot = pack {
+                break;
+            }
         }
     }
 }

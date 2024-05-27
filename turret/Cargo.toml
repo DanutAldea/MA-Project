@@ -1,5 +1,5 @@
 [package]
-name = "controller"
+name = "turret"
 authors.workspace = true
 version.workspace = true
 rust-version.workspace = true
@@ -35,3 +35,6 @@ lcd1602-driver = "0.2.0"
 panic-probe = { version = "0.3.2", features = ["print-defmt"] }
 defmt = "0.3.8"
 defmt-rtt = "0.4.1"
+fixed = "1.27.0"
+fixed-macro = "1.2.0"
+
